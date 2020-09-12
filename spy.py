@@ -35,7 +35,7 @@ REQUEST_LIMIT = {'create': '10/minute', 'room': '2/second'}
 
 words_500 = Corpus('corpora/words-500.txt', wsgi=False)
 
-db = Database('WhoIsTheSpy.sqlite', , check_same_thread=False)
+db = Database('WhoIsTheSpy.sqlite', check_same_thread=False)
 
 users = Table('users', db)
 rooms = Table('rooms', db)
