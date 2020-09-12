@@ -22,6 +22,7 @@ from flask_limiter.util import get_remote_address
 
 from corpus import Corpus
 
+ENABLE_BLANK = True
 ENABLE_REDIS = True
 PROXY = True
 
@@ -49,7 +50,7 @@ if 'users' not in db:
 if 'rooms' not in db:
 
     rooms.create(('room', 'TEXT'), ('civ_word', 'TEXT'),
-                 ('spy_word', 'TEXT'), ('spy_num', 'INTEGER'),
+                 ('spy_word', 'TEXT'), ('spy_num', 'INTEGER'), ('blank_num', 'INTEGER'),
                  ('total', 'INTEGER'), ('count', 'INTEGER'),
                  ('start', 'INTEGER'))
     rooms.create_index('room')
@@ -152,6 +153,15 @@ def enter_():
 
     return error('你目前没有加入任何房间')
 
+def sample_spy_blank(total):
+    if ENABLE_BLANK:
+        spy_num, blank_num = sample(range(1, total+1), 2)
+    else:
+        spy_num, blank_num = randint(1, total), -1
+    return spy_num, blank_num
+
+def get_start(total, blank_num):
+    return sample([i for i in range(1, total+1) if i !=blank_num], 1)[0]
 
 @app.route('/create/<int:total>')
 @limiter.limit(REQUEST_LIMIT['create'])
@@ -166,8 +176,9 @@ def create(total):
         room_id = ''.join(sample(ID_RANGE, ROOM_ID_LEN))
         if not rooms(room=room_id):
             break
-    rooms.insert(room_id, civ_word, spy_word, randint(1, total),
-                 total, 0, randint(1, total))
+    spy_num, blank_num = sample_spy_blank(total)
+    rooms.insert(room_id, civ_word, spy_word, spy_num, blank_num
+                 total, 0, get_start(total, blank_num))
     rooms.commit()
     db_clean(rooms)
 
@@ -188,10 +199,12 @@ def change():
             room_record = room_record[0]
             civ_word, spy_word = words_500.getRandom()
             total = room_record['total']
+            spy_num, blank_num = sample_spy_blank(total)
             rooms.update(room_record, civ_word=civ_word,
                          spy_word=spy_word,
-                         spy_num=randint(1, total),
-                         start=randint(1, total))
+                         spy_num=spy_num,
+                         blank_num=blank_num,
+                         start=get_start(total, blank_num))
             rooms.commit()
             url = url_for('enter', room_id=room_id)
             return redirect(url)
