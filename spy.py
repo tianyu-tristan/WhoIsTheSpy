@@ -135,6 +135,8 @@ def enter(room_id):
     user_num = user_record['num']
     if user_num == room_record['spy_num']:
         word = room_record['spy_word']
+    elif user_num == room_record['blank_num']:
+        word = 'blank'
     else:
         word = room_record['civ_word']
 
@@ -177,7 +179,7 @@ def create(total):
         if not rooms(room=room_id):
             break
     spy_num, blank_num = sample_spy_blank(total)
-    rooms.insert(room_id, civ_word, spy_word, spy_num, blank_num
+    rooms.insert(room_id, civ_word, spy_word, spy_num, blank_num,
                  total, 0, get_start(total, blank_num))
     rooms.commit()
     db_clean(rooms)
